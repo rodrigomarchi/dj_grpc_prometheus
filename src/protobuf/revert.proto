@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package dj.grpc.revert_name;
+
+service RevertApi {
+    rpc RevertName(RevertRequest)
+        returns (RevertResponse) {}
+}
+
+message RevertRequest {
+  string name = 1;
+  int32 delay = 2;
+}
+
+message RevertResponse {
+  string name = 1;
+}

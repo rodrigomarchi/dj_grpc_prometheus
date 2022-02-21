@@ -1,0 +1,129 @@
+version: '3'
+
+volumes:
+  prom_data: {}
+  graf_data: {}
+
+services:
+  redis:
+    image: redis:alpine
+  revert-name-server-web:
+    build: src/revert_name_server
+    ports:
+      - "8011:8011"
+    volumes:
+      - ./src/revert_name_server:/code
+    command: bash -c "
+      python manage.py migrate
+      && python manage.py runserver 0.0.0.0:8011
+      "
+    depends_on:
+      - redis
+  revert-name-server-grpc:
+    build: src/revert_name_server
+    ports:
+      - "50052:50052"
+      - "9998:9998"
+    volumes:
+      - ./src/revert_name_server:/code
+    command: bash -c "
+      python manage.py prometheus_grpcserver --max_workers 2 --port 50052 --prometheus_port 9998
+      "
+    depends_on:
+      - redis
+  revert-name-server-worker:
+    build: src/revert_name_server
+    ports:
+      - "9996:9996"
+    volumes:
+      - ./src/revert_name_server:/code
+    command: bash -c "
+      python prometheus_celery.py -A revert_name_server worker --beat --scheduler django --loglevel=info -n worker_%h
+      "
+    environment:
+      - CELERY_PROMETHEUS_PORT=9996
+    depends_on:
+      - redis
+  time-server-web:
+    build: src/time_server
+    ports:
+      - "8010:8010"
+    volumes:
+      - ./src/time_server:/code
+    command: bash -c "
+      python manage.py migrate
+      && python manage.py runserver 0.0.0.0:8010
+      "
+    depends_on:
+      - redis
+  time-server-grpc:
+    build: src/time_server
+    ports:
+      - "50051:50051"
+      - "9999:9999"
+    volumes:
+      - ./src/time_server:/code
+    command: bash -c "
+      python manage.py prometheus_grpcserver --max_workers 2 --port 50051 --prometheus_port 9999
+      "
+    depends_on:
+      - redis
+  time-server-worker:
+    build: src/time_server
+    ports:
+      - "9997:9997"
+    volumes:
+      - ./src/time_server:/code
+    command: bash -c "
+      python prometheus_celery.py -A time_server worker --beat --scheduler django --loglevel=info -n worker_%h
+      "
+    environment:
+      - CELERY_PROMETHEUS_PORT=9997
+    depends_on:
+      - redis
+  edge-server-web:
+    build: src/edge_server
+    ports:
+      - "8012:8012"
+    volumes:
+      - ./src/edge_server:/code
+    command: bash -c "
+      python manage.py migrate
+      && python manage.py runserver 0.0.0.0:8012
+      "
+    depends_on:
+      - redis
+  edge-server-grpc:
+    build: src/edge_server
+    ports:
+      - "50053:50053"
+      - "9995:9995"
+    volumes:
+      - ./src/edge_server:/code
+    command: bash -c "
+      python manage.py prometheus_grpcserver --max_workers 2 --port 50053 --prometheus_port 9995
+      "
+    depends_on:
+      - redis
+  promethus:
+    image: prom/prometheus
+    volumes:
+      - prom_data:/prometheus
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "127.0.0.1:9090:9090"
+
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - graf_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_DASHBOARDS_JSON_ENABLED=true

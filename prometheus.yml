@@ -1,0 +1,45 @@
+global:
+  scrape_interval:     15s # Set the scrape interval to every 15 seconds. Default is every 1 minute.
+  evaluation_interval: 15s # Evaluate rules every 15 seconds. The default is every 1 minute.
+
+alerting:
+  alertmanagers:
+  - static_configs:
+    - targets:
+      # - alertmanager:9093
+
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+scrape_configs:
+  - job_name: 'edge-server-web'
+    metrics_path: /prometheus/metrics
+    static_configs:
+    - targets: ['edge-server-web:8012']
+
+  - job_name: 'edge-server-grpc'
+    metrics_path: /
+    static_configs:
+    - targets: ['edge-server-grpc:9995']
+
+  - job_name: 'revert-name-server-grpc'
+    metrics_path: /
+    static_configs:
+    - targets: ['revert-name-server-grpc:9998']
+
+  - job_name: 'time-server-grpc'
+    metrics_path: /
+    static_configs:
+    - targets: ['time-server-grpc:9999']
+
+  - job_name: 'time-server-worker'
+    metrics_path: /
+    static_configs:
+    - targets: ['time-server-worker:9997']
+
+  - job_name: 'revert-name-server-worker'
+    metrics_path: /
+    static_configs:
+    - targets: ['revert-name-server-worker:9996']
+

@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package dj.grpc.time;
+
+service TimeProcedureApi {
+    rpc WhatTimeIs(TimeRequest)
+        returns (TimeResponse) {}
+}
+
+message TimeRequest {}
+
+message TimeResponse {
+  string time = 1;
+}

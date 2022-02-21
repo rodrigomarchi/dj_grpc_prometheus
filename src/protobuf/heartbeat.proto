@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package dj.grpc.heartbeat;
+
+service HeartBeatApi {
+    rpc BeatHeart(BeatRequest)
+        returns (BeatResponse) {}
+}
+
+message BeatRequest {
+    string service_name = 1;
+}
+
+message BeatResponse {}
