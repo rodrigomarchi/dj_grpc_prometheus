@@ -1,13 +1,12 @@
 import datetime
 
-from django.core.management.base import BaseCommand
 from django.utils import autoreload
 from django_grpc.utils import extract_handlers, create_server
 from prometheus_client import start_http_server
+from django_grpc.management.commands import grpcserver
 
 
-class Command(BaseCommand):
-    help = 'Run my custom gRPC server'
+class Command(grpcserver.Command):
 
     def add_arguments(self, parser):
         parser.add_argument('--max_workers', type=int, help="Number of workers")
@@ -15,18 +14,6 @@ class Command(BaseCommand):
         parser.add_argument('--prometheus_port', type=int, default=9999, help="Prometheus port number")
         parser.add_argument('--autoreload', action='store_true', default=False)
         parser.add_argument('--list-handlers', action='store_true', default=False, help="Print all registered endpoints")
-
-    def handle(self, *args, **options):
-        if options['autoreload'] is True:
-            self.stdout.write("ATTENTION! Autoreload is enabled!")
-            if hasattr(autoreload, "run_with_reloader"):
-                # Django 2.2. and above
-                autoreload.run_with_reloader(self._serve, **options)
-            else:
-                # Before Django 2.2.
-                autoreload.main(self._serve, None, options)
-        else:
-            self._serve(**options)
 
     def _serve(self, max_workers, port, prometheus_port, *args, **kwargs):
         autoreload.raise_last_exception()
@@ -38,6 +25,7 @@ class Command(BaseCommand):
         start_http_server(prometheus_port)
 
         self.stdout.write("Server is listening port %s" % port)
+        self.stdout.write("Prometheus is listening port %s" % prometheus_port)
 
         if kwargs['list_handlers'] is True:
             self.stdout.write("Registered handlers:")
