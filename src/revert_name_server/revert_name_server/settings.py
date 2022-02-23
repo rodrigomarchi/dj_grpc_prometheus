@@ -9,10 +9,14 @@ https://docs.djangoproject.com/en/3.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.2/ref/settings/
 """
-
+import os
 from pathlib import Path
 
+from prometheus_client import REGISTRY, CollectorRegistry
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
+from prometheus_client.multiprocess import MultiProcessCollector
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
@@ -136,6 +140,11 @@ CELERY_RESULT_BACKEND = "django-db"
 CELERY_BROKER_URL = "redis://redis:6379"
 CELERY_DEFAULT_QUEUE = 'revert_name_server_queue'
 
+PROMETHEUS_REGISTRY = REGISTRY
+if os.environ.get('CELERY_PROMETHEUS_PORT', None) \
+        and os.environ.get('PROMETHEUS_MULTIPROC_DIR', None):
+    PROMETHEUS_REGISTRY = CollectorRegistry()
+    MultiProcessCollector(PROMETHEUS_REGISTRY)
 
 GRPCSERVER = {
     'servicers': [

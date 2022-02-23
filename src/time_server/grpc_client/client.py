@@ -3,6 +3,7 @@ from contextlib import contextmanager
 from typing import Any, Dict, Generator, Type
 
 import grpc
+from django.conf import settings
 from py_grpc_prometheus.prometheus_client_interceptor import \
     PromClientInterceptor
 
@@ -21,7 +22,9 @@ class ChannelStateLogger:
 class GrpcClient:
     _channels = {}
     _prometheus_interceptor = PromClientInterceptor(
-        enable_client_handling_time_histogram=True,)
+        enable_client_handling_time_histogram=True,
+        registry=settings.PROMETHEUS_REGISTRY
+    )
     DEFAULT_OPTIONS = {
         # Send keepalive ping every 30 seconds, default is 2 hours.
         "grpc.keepalive_time_ms": 30000,

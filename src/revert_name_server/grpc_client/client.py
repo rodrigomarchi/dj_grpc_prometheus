@@ -1,10 +1,9 @@
 import logging
-import os
 from contextlib import contextmanager
 from typing import Any, Dict, Generator, Type
 
 import grpc
-from prometheus_client import start_http_server
+from django.conf import settings
 from py_grpc_prometheus.prometheus_client_interceptor import \
     PromClientInterceptor
 
@@ -21,11 +20,11 @@ class ChannelStateLogger:
 
 
 class GrpcClient:
-    _start_prometheus_server = True
-    _celery_prometheus_port = os.environ.get('CELERY_PROMETHEUS_PORT', None)
     _channels = {}
     _prometheus_interceptor = PromClientInterceptor(
-        enable_client_handling_time_histogram=True,)
+        enable_client_handling_time_histogram=True,
+        registry=settings.PROMETHEUS_REGISTRY
+    )
     DEFAULT_OPTIONS = {
         # Send keepalive ping every 30 seconds, default is 2 hours.
         "grpc.keepalive_time_ms": 30000,
@@ -49,13 +48,6 @@ class GrpcClient:
             target: str,
             custom_options: Dict[str, Any] = None
     ) -> Generator:
-
-        if cls._start_prometheus_server \
-                and cls._celery_prometheus_port\
-                and cls._celery_prometheus_port.isdigit():
-            start_http_server(int(cls._celery_prometheus_port))
-            cls._start_prometheus_server = False
-
         if target not in cls._channels:
             state_logger = ChannelStateLogger(target)
             options = cls.DEFAULT_OPTIONS.copy()
